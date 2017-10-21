@@ -33,7 +33,7 @@
     // global
     var
       container = this,
-      data = (typeof container.data("gracket") === "undefined") ? [] :
+      inputData = (typeof container.data("gracket") === "undefined") ? [] :
                 (typeof container.data("gracket") === "string") ? JSON.parse(container.data("gracket")) :
                     container.data("gracket"),
       team_count,
@@ -53,7 +53,7 @@
         this.gracket.settings = $.extend({}, this.gracket.defaults, options);
 
         if (this.gracket.settings.src.length)
-          data = this.gracket.settings.src;
+          inputData = this.gracket.settings.src;
 
         // always prepend unique id to canvas id, as we dont want dupes
         this.gracket.settings.canvasId = this.gracket.settings.canvasId + "_" + ((new Date()).getTime());
@@ -72,7 +72,20 @@
         container
           .addClass(this.gracket.settings.gracketClass)
           .prepend(_canvas);
-          
+
+        // Detect system (single/double elimination & consolidation round) from input data
+        this.gracket.matchSystem = helpers.detectMatchSystem( inputData );
+        var system = this.gracket.matchSystem.system;
+
+        var data;
+        console.log( system );
+        if(system === "single_elimination") {
+          data = inputData;
+        }
+        else if(system === "double_elimination") {
+          data = inputData[0];
+          console.log( "testing data", data );
+        }
 
         //  create rounds
         round_count = data.length;
@@ -380,9 +393,9 @@
 
         // check if provided array is 4 dimensional, then it is double elimination
         if((data[0]) && (data[0][0]) && (data[0][0][0]) && (data[0][0][0][0])) {
-            if( data[0].length < 2 )
+            if( data.length < 2 )
                 throw "You have not provided double elimination data bottom branch in input data. Please see example json on github.";
-            if( data[0].length < 3 )
+            if( data.length < 3 )
                 throw "You have not provided third array member which is used as final round between top and bottom data branch in double elimination system. Please see example json on github.";
 
             settingOutput.system = "double_elimination";
