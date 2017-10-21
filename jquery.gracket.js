@@ -12,6 +12,7 @@
     $.fn.gracket.defaults = {
       gracketClass : "g_gracket",
       gameClass : "g_game",
+      gameDeClass : "g_game_de",
       roundClass : "g_round",
       roundLabelClass : "g_round_label",
       teamClass : "g_team",
@@ -164,8 +165,8 @@
                 for (var g=0; g < game_count; g++) {
 
                     var
-                        game_html = helpers.build.game(this.gracket.settings),
-                        outer_height = container.find("." + this.gracket.settings.gameClass).outerHeight(true),
+                        game_html = helpers.build.game(this.gracket.settings, true),
+                        outer_height = container.find("." + this.gracket.settings.gameDeClass).outerHeight(true),
                         spacer = helpers.build.spacerDe(this.gracket.settings, outer_height, r, (r !== 0 && g === 0) ? true : false)
                     ;
 
@@ -205,6 +206,26 @@
                 }
 
             }
+
+            // append round indent before top branch
+            var indentRounds = inputData[1].length - inputData[0].length;
+            if( indentRounds ) {
+                var round_html = helpers.build.round(this.gracket.settings);
+
+                for( var i = 0; i < indentRounds; i++ )
+                    container.find("canvas").after( helpers.build.round(this.gracket.settings).append( $("<div />", {
+                        "class" : "g_indent"
+                    }).css({
+                        "width" : container.find("." + this.gracket.settings.gameDeClass).outerWidth(true)
+                    }) ) );
+/*
+                $("<div />", {
+                    "class" : "g_indent"
+                }).css({
+                    "width" : container.find("." + this.gracket.settings.gameDeClass).outerWidth(true)
+                })*/
+            }
+
         }
       }
 
@@ -230,9 +251,9 @@
             "class" : node.teamClass + " " + (data.id || "id_null")
           });
         },
-        game : function(node){
+        game : function(node, doubleElimination){
           return game = $("<div />", {
-            "class" : node.gameClass
+            "class" :  node.gameClass + ( doubleElimination ? " " + node.gameDeClass : "" )
           });
         },
         round : function(node){
