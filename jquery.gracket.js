@@ -70,8 +70,13 @@
 
         // Append canvas & add class
         container
-          .addClass(this.gracket.settings.gracketClass)
-          .prepend(_canvas);
+          .addClass(this.gracket.settings.gracketClass).prepend(_canvas);
+          /*.append('<div class="g_top_branch"></div>');*/
+
+        /*
+        var topBranchContainer = container.find(".g_top_branch");
+        topBranchContainer.prepend(_canvas);
+        */
 
         // Detect system (single/double elimination & consolidation round) from input data
         this.gracket.matchSystem = helpers.detectMatchSystem( inputData );
@@ -92,7 +97,7 @@
         for (var r=0; r < round_count; r++) {
 
           var round_html = helpers.build.round(this.gracket.settings);
-          container.append(round_html);
+            container.append(round_html);
 
           // create games in round
           game_count = data[r].length;
@@ -135,11 +140,72 @@
 
               }
 
-            };
+            }
 
-          };
+          }
 
-        };
+        }
+
+        if(system === "double_elimination") {
+
+            var test = container.clone();
+            container.append('<div class="g_divider"></div>');
+            console.log( "cloning ", test );
+
+            data = inputData[1];
+            round_count = data.length;
+            for (var r=0; r < round_count; r++) {
+
+                var round_html = helpers.build.round(this.gracket.settings);
+                container.append(round_html);
+
+                // create games in round
+                game_count = data[r].length;
+                for (var g=0; g < game_count; g++) {
+
+                    var
+                        game_html = helpers.build.game(this.gracket.settings),
+                        outer_height = container.find("." + this.gracket.settings.gameClass).outerHeight(true),
+                        spacer = helpers.build.spacerDe(this.gracket.settings, outer_height, r, (r !== 0 && g === 0) ? true : false)
+                    ;
+
+                    // append spacer
+                    if (g % 1 == 0 && r !== 0) round_html.append(spacer);
+
+                    // append game
+                    round_html.append(game_html);
+
+                    // create teams in game
+                    team_count = data[r][g].length;
+                    for (var t=0; t < team_count; t++) {
+
+                        var team_html = helpers.build.team(data[r][g][t], this.gracket.settings);
+                        game_html.append(team_html);
+
+                        var team_width = team_html.outerWidth(true);
+                        if (max_round_width[r] === undefined || max_round_width[r] < team_width)
+                            max_round_width[r] = team_width;
+
+                        // adjust winner
+                        if (team_count === 1) {
+
+                            // remove spacer
+                            game_html.prev().remove()
+
+                            // align winner
+                            helpers.align.winner(game_html, this.gracket.settings, game_html.parent().prev().children().eq(0).height());
+
+                            // init the listeners after gracket is built
+                            helpers.listeners(this.gracket.settings, data, game_html.parent().prev().children().eq(1));
+
+                        }
+
+                    }
+
+                }
+
+            }
+        }
       }
 
     };
@@ -179,6 +245,14 @@
             "class" : node.spacerClass
           }).css({
             "height" : (isFirst) ?  (((Math.pow(2, r)) - 1) * (yOffset / 2)) : ((Math.pow(2, r) -1) * yOffset)
+          });
+        },
+        spacerDe : function(node, yOffset, r, isFirst){
+          var powBy = r > 1 ? r - (r - Math.floor(r/2)) : 0;
+          return spacer = $("<div />", {
+            "class" : node.spacerClass
+          }).css({
+            "height" : (isFirst) ?  (((Math.pow(2, powBy)) - 1) * (yOffset / 2)) : ((Math.pow(2, powBy) -1) * yOffset)
           });
         },
         labels : function(data, offset){
