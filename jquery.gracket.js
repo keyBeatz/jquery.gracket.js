@@ -14,6 +14,7 @@
       gameClass : "g_game",
       gameDeClass : "g_game_de",
       roundClass : "g_round",
+      roundDeClass : "g_round_de",
       roundLabelClass : "g_round_label",
       teamClass : "g_team",
       winnerClass : "g_winner",
@@ -80,8 +81,9 @@
         */
 
         // Detect system (single/double elimination & consolidation round) from input data
-        this.gracket.matchSystem = helpers.detectMatchSystem( inputData );
-        var system = this.gracket.matchSystem.system;
+        var systemSetting = helpers.detectMatchSystem( inputData );
+        this.gracket.settings.tournamentMode = systemSetting;
+        var system = systemSetting.system;
 
         var data;
         console.log( system );
@@ -97,7 +99,7 @@
         round_count = data.length;
         for (var r=0; r < round_count; r++) {
 
-          var round_html = helpers.build.round(this.gracket.settings);
+          var round_html = helpers.build.round(this.gracket.settings, false, r, round_count);
             container.append(round_html);
 
           // create games in round
@@ -157,7 +159,7 @@
             round_count = data.length;
             for (var r=0; r < round_count; r++) {
 
-                var round_html = helpers.build.round(this.gracket.settings);
+                var round_html = helpers.build.round(this.gracket.settings, true, r, round_count);
                 container.append(round_html);
 
                 // create games in round
@@ -167,7 +169,7 @@
                     var
                         game_html = helpers.build.game(this.gracket.settings, true),
                         outer_height = container.find("." + this.gracket.settings.gameDeClass).outerHeight(true),
-                        spacer = helpers.build.spacerDe(this.gracket.settings, outer_height, r, (r !== 0 && g === 0) ? true : false)
+                        spacer = helpers.build.spacerDe(this.gracket.settings, outer_height, r, (r !== 0 && g === 0))
                     ;
 
                     // append spacer
@@ -210,20 +212,93 @@
             // append round indent before top branch
             var indentRounds = inputData[1].length - inputData[0].length;
             if( indentRounds ) {
-                var round_html = helpers.build.round(this.gracket.settings);
-
                 for( var i = 0; i < indentRounds; i++ )
-                    container.find("canvas").after( helpers.build.round(this.gracket.settings).append( $("<div />", {
+                    container.find("canvas").after( helpers.build.roundIndent(this.gracket.settings).append( $("<div />", {
                         "class" : "g_indent"
                     }).css({
-                        "width" : container.find("." + this.gracket.settings.gameDeClass).outerWidth(true)
+                        "width" : container.find("." + this.gracket.settings.gameDeClass).outerWidth(true) + 60
                     }) ) );
-/*
-                $("<div />", {
-                    "class" : "g_indent"
-                }).css({
-                    "width" : container.find("." + this.gracket.settings.gameDeClass).outerWidth(true)
-                })*/
+
+            }
+
+            var deLastRound = $("<div />", {
+                class: "g_de_last_round g_final"
+            });
+            var gracketSettings =  this.gracket.settings;
+            var deLastRoundGame = helpers.build.game( gracketSettings );
+            $.each( inputData[2][0], function(i, v) {
+                console.log(v);
+                deLastRoundGame.append( helpers.build.team( v, gracketSettings ) );
+            });
+
+            deLastRound.append( deLastRoundGame );
+            container.append( deLastRound );
+
+            console.log(deLastRound);
+
+            function generateConnectors() {
+                $(".g_round").each(function(i, v) {
+                    var leftLine = $("<div />", {
+                        "class" : "g_line"
+                    }).css({
+                        "width" : "30px"
+                    });
+                    $(this).after(leftLine);
+
+                    var spacerTopHeight = $(this).find(".g_spacer:first").outerHeight(true) || 0;
+                    var spacerHeight = $(this).find(".g_spacer:not(:first)").outerHeight(true) || 0;
+                    $(this).find(".g_game").each(function(j,val) {
+                        var matchHeight = $(this).outerHeight(true);
+                        var teamHeight = $(this).find(".g_team").outerHeight(true);
+                        if( j === 0 ) {
+                            leftLine.append($("<div />", {
+                                "class" : "g_line_spacer"
+                            }).css({
+                                height: teamHeight + spacerTopHeight
+                            }));
+                        }
+                        else {
+                            leftLine.append($("<div />", {
+                                "class" : "g_line_spacer " + (j%2 !== 0 ? "g_line_draw" : "")
+                            }).css({
+                                height: matchHeight + spacerHeight
+                            }));
+                        }
+                    });
+                });
+
+                $(".g_round:not(.g_round_de,.g_round_indent):first").addClass("g_round_first");
+                $(".g_round_de:first").addClass("g_round_first");
+
+
+            }
+            generateConnectors();
+
+            if( $(".g_gracket .g_semifinal").length > 1 ) {
+                console.log("works");
+                var teamHeight = 30;
+                var matchBotMargin = 15;
+                var firstEl = $(".g_gracket .g_round.g_semifinal:first .g_game");
+                var secondEl = $(".g_gracket .g_round.g_semifinal:last .g_game");
+                var heightBetween = secondEl.position().top - firstEl.position().top;
+
+                console.log( "second top", secondEl.position().top, "first top", firstEl.position().top, "between", heightBetween  );
+
+                $(".g_de_last_round").css({ top: heightBetween + teamHeight });
+
+                console.log(firstEl.outerWidth(true));
+                console.log(firstEl.position().left );
+                console.log(firstEl.position().left + firstEl.outerWidth(true));
+
+                container.append(
+                    $("<div />", {
+                        "class": "g_de_final_round_vertical_connector"
+                    }).css({
+                        top: firstEl.position().top + teamHeight,
+                        height: heightBetween,
+                        left: firstEl.position().left + firstEl.outerWidth(true)
+                    })
+                );
             }
 
         }
@@ -251,14 +326,29 @@
             "class" : node.teamClass + " " + (data.id || "id_null")
           });
         },
-        game : function(node, doubleElimination){
+        game : function(node, bottomBranch){
           return game = $("<div />", {
-            "class" :  node.gameClass + ( doubleElimination ? " " + node.gameDeClass : "" )
+            "class" :  node.gameClass + ( bottomBranch ? " " + node.gameDeClass : "" )
           });
         },
-        round : function(node){
+        round : function(node, bottomBranch, r, roundCount){
+            var roundType = "";
+            var num = node.tournamentMode.system === "double_elimination" ? 1 : 0;
+
+            if( r + 1 === roundCount )
+                roundType = node.tournamentMode.system === "double_elimination" ? "g_semifinal" : "g_final";
+            else if( r === roundCount - 1 && node.tournamentMode.system !== "double_elimination" )
+                roundType = "g_semifinal";
+            else
+                roundType = "g_round_num_" + r;
+
           return round = $("<div />", {
-            "class" : node.roundClass
+            "class" : node.roundClass + " " + roundType + " " + ( bottomBranch ? node.roundDeClass : "" )
+          });
+        },
+        roundIndent : function(node){
+          return round = $("<div />", {
+            "class" : node.roundClass + " g_round_indent"
           });
         },
         spacer : function(node, yOffset, r, isFirst){
@@ -357,6 +447,7 @@
             ctx.lineCap = node.canvasLineCap;
             ctx.lineWidth = node.canvasLineWidth;
 
+            return;
             // only need to start path once
             ctx.beginPath();
 
