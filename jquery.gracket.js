@@ -269,26 +269,18 @@
 
                 $(".g_round:not(.g_round_de,.g_round_indent):first").addClass("g_round_first");
                 $(".g_round_de:first").addClass("g_round_first");
-
+                // remove (repair) redundant connectors in bottom branch
+                $(".g_round_de:even").next(".g_line").find(".g_line_draw").hide();
 
             }
             generateConnectors();
 
             if( $(".g_gracket .g_semifinal").length > 1 ) {
-                console.log("works");
                 var teamHeight = 30;
                 var matchBotMargin = 15;
                 var firstEl = $(".g_gracket .g_round.g_semifinal:first .g_game");
                 var secondEl = $(".g_gracket .g_round.g_semifinal:last .g_game");
                 var heightBetween = secondEl.position().top - firstEl.position().top;
-
-                console.log( "second top", secondEl.position().top, "first top", firstEl.position().top, "between", heightBetween  );
-
-                $(".g_de_last_round").css({ top: heightBetween + teamHeight });
-
-                console.log(firstEl.outerWidth(true));
-                console.log(firstEl.position().left );
-                console.log(firstEl.position().left + firstEl.outerWidth(true));
 
                 container.append(
                     $("<div />", {
@@ -299,6 +291,18 @@
                         left: firstEl.position().left + firstEl.outerWidth(true)
                     })
                 );
+
+                console.log( "second top", secondEl.position().top, "first top", firstEl.position().top, "between", heightBetween  );
+
+                $(".g_de_last_round").css({
+                    top: $(".g_de_final_round_vertical_connector").position().top - teamHeight + $(".g_de_final_round_vertical_connector").outerHeight() / 2,
+                    left: firstEl.position().left + firstEl.outerWidth(true) + ( 30 * 2 )
+                });
+
+                console.log(firstEl.outerWidth(true));
+                console.log(firstEl.position().left );
+                console.log(firstEl.position().left + firstEl.outerWidth(true));
+
             }
 
         }
