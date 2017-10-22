@@ -234,46 +234,8 @@
             deLastRound.append( deLastRoundGame );
             container.append( deLastRound );
 
-            console.log(deLastRound);
-
-            function generateConnectors() {
-                $(".g_round").each(function(i, v) {
-                    var leftLine = $("<div />", {
-                        "class" : "g_line"
-                    }).css({
-                        "width" : "30px"
-                    });
-                    $(this).after(leftLine);
-
-                    var spacerTopHeight = $(this).find(".g_spacer:first").outerHeight(true) || 0;
-                    var spacerHeight = $(this).find(".g_spacer:not(:first)").outerHeight(true) || 0;
-                    $(this).find(".g_game").each(function(j,val) {
-                        var matchHeight = $(this).outerHeight(true);
-                        var teamHeight = $(this).find(".g_team").outerHeight(true);
-                        if( j === 0 ) {
-                            leftLine.append($("<div />", {
-                                "class" : "g_line_spacer"
-                            }).css({
-                                height: teamHeight + spacerTopHeight
-                            }));
-                        }
-                        else {
-                            leftLine.append($("<div />", {
-                                "class" : "g_line_spacer " + (j%2 !== 0 ? "g_line_draw" : "")
-                            }).css({
-                                height: matchHeight + spacerHeight
-                            }));
-                        }
-                    });
-                });
-
-                $(".g_round:not(.g_round_de,.g_round_indent):first").addClass("g_round_first");
-                $(".g_round_de:first").addClass("g_round_first");
-                // remove (repair) redundant connectors in bottom branch
-                $(".g_round_de:even").next(".g_line").find(".g_line_draw").hide();
-
-            }
-            generateConnectors();
+            // generate vertical connectors
+            helpers.build.generateConnectors( container );
 
             if( $(".g_gracket .g_semifinal").length > 1 ) {
                 var teamHeight = 30;
@@ -286,7 +248,7 @@
                     $("<div />", {
                         "class": "g_de_final_round_vertical_connector"
                     }).css({
-                        top: firstEl.position().top + teamHeight,
+                        top: firstEl.position().top + teamHeight + 5,
                         height: heightBetween,
                         left: firstEl.position().left + firstEl.outerWidth(true)
                     })
@@ -306,6 +268,11 @@
             }
 
         }
+
+        // generate vertical connectors (only if they are not already generated)
+        if( !container.connectorsGenerated )
+            helpers.build.generateConnectors( container );
+
       }
 
     };
@@ -313,6 +280,44 @@
     // Private methods
     var helpers = {
       build : {
+          generateConnectors : function( container ) {
+
+              container.connectorsGenerated = true;
+
+              container.find(".g_round").each(function(i, v) {
+                  var leftLine = $("<div />", {
+                      "class" : "g_line"
+                  }).css({
+                      "width" : "30px"
+                  });
+                  $(this).after(leftLine);
+
+                  var spacerTopHeight = $(this).find(".g_spacer:first").outerHeight(true) || 0;
+                  var spacerHeight = $(this).find(".g_spacer:not(:first)").outerHeight(true) || 0;
+                  $(this).find(".g_game").each(function(j,val) {
+                      var matchHeight = $(this).outerHeight(true);
+                      var teamHeight = $(this).find(".g_team").outerHeight(true);
+                      if( j === 0 ) {
+                          leftLine.append($("<div />", {
+                              "class" : "g_line_spacer"
+                          }).css({
+                              height: teamHeight + spacerTopHeight
+                          }));
+                      }
+                      else {
+                          leftLine.append($("<div />", {
+                              "class" : "g_line_spacer " + (j%2 !== 0 ? "g_line_draw" : "")
+                          }).css({
+                              height: matchHeight + spacerHeight
+                          }));
+                      }
+                  });
+              });
+
+              // remove (repair) redundant connectors in bottom branch
+              $(".g_round_de:even").next(".g_line").find(".g_line_draw").hide();
+
+          },
         team : function(data, node){
           var html = [
             '<h3'+ ((typeof data.score === "undefined") ? "" : " title=\"Score: " + data.score + "\"") +'>',
